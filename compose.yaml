@@ -1,0 +1,63 @@
+name: sgb-tp
+
+services:
+  app:
+    image: sgb-tp:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    init: true
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      STATIC_DIR: /app/artifacts/ai-trading/dist/public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tradepilot}:${POSTGRES_PASSWORD:-tradepilot-local-only}@db:5432/${POSTGRES_DB:-tradepilot}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:5000}
+      # Lets the local stack boot without embedding or requesting a real key.
+      # AI analysis remains unavailable until OPENAI_API_KEY is set in .env.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-docker-local-key-not-configured}
+      # The bundled Postgres service is reachable only on Compose's private
+      # network and does not expose TLS. External production databases retain
+      # the application's strict TLS default unless explicitly overridden.
+      PGSSLMODE: ${PGSSLMODE:-disable}
+      TZ: ${TZ:-Asia/Jakarta}
+    ports:
+      - "${APP_PORT:-5000}:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    stop_grace_period: 15s
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tradepilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradepilot-local-only}
+      POSTGRES_DB: ${POSTGRES_DB:-tradepilot}
+      TZ: ${TZ:-Asia/Jakarta}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres-data:

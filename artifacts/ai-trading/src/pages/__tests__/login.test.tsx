@@ -16,7 +16,6 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
 import LoginPage, { loginErrorDescription } from "../login";
 import {
@@ -78,9 +77,11 @@ describe("LoginPage: happy-path render", () => {
     expect(screen.getByTestId("input-password")).toBeInTheDocument();
     expect(screen.getByTestId("checkbox-remember-me")).toBeInTheDocument();
     expect(screen.getByTestId("button-submit-login")).toBeInTheDocument();
-    expect(screen.getByTestId("button-social-signin-menu")).toBeInTheDocument();
+    expect(screen.queryByTestId("button-social-signin-menu")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("button-google-signin")).not.toBeInTheDocument();
     expect(screen.getByTestId("link-forgot-password")).toBeInTheDocument();
-    expect(screen.getByTestId("link-register")).toBeInTheDocument();
+    // Web TP khusus admin: tidak ada pendaftaran publik.
+    expect(screen.queryByTestId("link-register")).toBeNull();
 
     // Reset-success banner is hidden on a fresh load (no
     // `password_reset_success` flag in sessionStorage).
@@ -93,58 +94,6 @@ describe("LoginPage: happy-path render", () => {
     await waitFor(() => {
       expect(screen.getByTestId("form-login")).toBeInTheDocument();
     });
-  });
-});
-
-describe("LoginPage: social sign-in dropdown", () => {
-  it("opens on click and lists all three providers; picking one navigates to its OAuth start route", async () => {
-    installFetchMock([loginHandler({})]);
-    const { Wrapper } = makeWrapper();
-
-    // jsdom's Location.href is non-configurable, so it can't be stubbed in
-    // place — replace `window.location` itself instead, with an object
-    // that carries real string snapshots of pathname/search/origin (never
-    // `{ ...window.location }`, which silently yields an empty object
-    // since Location's real properties are prototype accessors). Restored
-    // in the file's shared afterEach.
-    const hrefSetter = vi.fn();
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      writable: true,
-      value: {
-        pathname: window.location.pathname,
-        search: window.location.search,
-        origin: window.location.origin,
-        set href(v: string) {
-          hrefSetter(v);
-        },
-        get href() {
-          return "http://localhost/login";
-        },
-      },
-    });
-
-    const user = userEvent.setup();
-    render(
-      <Wrapper>
-        <LoginPage />
-      </Wrapper>,
-    );
-
-    // Collapsed by default — no provider items on the page yet.
-    expect(screen.queryByTestId("button-google-signin")).not.toBeInTheDocument();
-
-    // Radix's DropdownMenuTrigger opens on a real pointer-down sequence,
-    // not a bare synthetic `click` — userEvent dispatches that full
-    // sequence the way a real browser would.
-    await user.click(await screen.findByTestId("button-social-signin-menu"));
-
-    expect(await screen.findByTestId("button-google-signin")).toBeInTheDocument();
-    expect(screen.getByTestId("button-facebook-signin")).toBeInTheDocument();
-    expect(screen.getByTestId("button-tiktok-signin")).toBeInTheDocument();
-
-    await user.click(screen.getByTestId("button-facebook-signin"));
-    expect(hrefSetter).toHaveBeenCalledWith("/api/auth/facebook");
   });
 });
 
@@ -166,25 +115,6 @@ describe("LoginPage: reset-success banner branch", () => {
     // The flag is consumed on read, so it should be cleared from
     // sessionStorage after the page mounts.
     expect(sessionStorage.getItem("password_reset_success")).toBeNull();
-  });
-});
-
-describe("LoginPage: Google OAuth callback error", () => {
-  it("strips ?error=google from the URL after surfacing it", async () => {
-    window.history.replaceState({}, "", "/login?error=google");
-    installFetchMock([loginHandler({})]);
-    const { Wrapper } = makeWrapper();
-
-    render(
-      <Wrapper>
-        <LoginPage />
-      </Wrapper>,
-    );
-
-    await waitFor(() => {
-      expect(window.location.search).toBe("");
-    });
-    expect(screen.getByTestId("form-login")).toBeInTheDocument();
   });
 });
 
@@ -256,7 +186,7 @@ describe("LoginPage: user actions", () => {
     });
   });
 
-  it("navigates to /dashboard after a successful login response", async () => {
+  it("navigates to the admin console after a successful login response", async () => {
     installFetchMock([loginHandler({})]);
     const { Wrapper } = makeWrapper();
 
@@ -280,9 +210,9 @@ describe("LoginPage: user actions", () => {
     });
 
     // wouter pushes the new path onto the HTML5 history stack; after
-    // login.mutateAsync resolves the page should land on /dashboard.
+    // login.mutateAsync resolves the page should land on /admin.
     await waitFor(() => {
-      expect(window.location.pathname).toBe("/dashboard");
+      expect(window.location.pathname).toBe("/admin");
     });
   });
 

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import OpenAI from "openai";
 import { z } from "zod";
 import type { CalendarEvent } from "./calendar";
@@ -17,6 +18,32 @@ import { logger } from "./logger";
 // the tier-specific keys are actually created in the OpenAI dashboard and
 // configured as secrets.
 export type AICostTier = "free" | "paid" | "dev";
+
+export type OpenAIOutcome = {
+  success: boolean;
+  model: string;
+  tier: AICostTier;
+  error?: string;
+};
+let openAIOutcomeObserver: ((outcome: OpenAIOutcome) => void | Promise<void>) | null = null;
+
+/** Decouples core AI calls from the optional persisted observability layer. */
+export function setOpenAIOutcomeObserver(
+  observer: ((outcome: OpenAIOutcome) => void | Promise<void>) | null,
+): void {
+  openAIOutcomeObserver = observer;
+}
+
+function observeOpenAIOutcome(outcome: OpenAIOutcome): void {
+  if (!openAIOutcomeObserver) return;
+  try {
+    void Promise.resolve(openAIOutcomeObserver(outcome)).catch((error) => {
+      logger.warn({ err: error }, "OpenAI outcome observer failed");
+    });
+  } catch (error) {
+    logger.warn({ err: error }, "OpenAI outcome observer failed");
+  }
+}
 
 function buildTierClient(envVar: string): OpenAI {
   return new OpenAI({ apiKey: process.env[envVar] ?? process.env["OPENAI_API_KEY"] });
@@ -473,7 +500,17 @@ async function callOpenAI(
           totalTokens: response.usage.total_tokens,
         }
       : null;
-    return { data: JSON.parse(content), usage };
+    const data = JSON.parse(content);
+    observeOpenAIOutcome({ success: true, model, tier });
+    return { data, usage };
+  } catch (error) {
+    observeOpenAIOutcome({
+      success: false,
+      model,
+      tier,
+      error: error instanceof Error ? error.message.slice(0, 300) : "unknown_error",
+    });
+    throw error;
   } finally {
     if (timeout) clearTimeout(timeout);
   }
@@ -795,6 +832,13 @@ function finalizeOutput(out: AIOutput): AIOutput {
 // `callCount` only counts calls that actually completed — a call that
 // throws (timeout, API error) contributes nothing, since no usage is
 // recoverable for it (see the `Promise.race` timeout note on `callOpenAI`).
+/**
+ * Fingerprint of the pro system prompt. Persisted with every Trade Pilot
+ * analysis so the audit trail records exactly which prompt produced it;
+ * it changes automatically whenever the prompt text changes.
+ */
+export const PRO_PROMPT_VERSION = `pro-${createHash("sha256").update(PRO_SYSTEM_PROMPT).digest("hex").slice(0, 16)}`;
+
 export interface AnalysisTokenUsage {
   promptTokens: number;
   completionTokens: number;

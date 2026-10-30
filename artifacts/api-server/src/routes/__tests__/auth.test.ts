@@ -22,7 +22,10 @@ import {
   reauthLimiter,
   accountDeletionLimiter,
 } from "../../middleware/rate-limit";
-import { getConfiguredReplitOrigins } from "../../app";
+import {
+  getConfiguredPublicBaseOrigin,
+  getConfiguredReplitOrigins,
+} from "../../app";
 import {
   exchangeCodeForProfile,
   verifyGoogleIdToken,
@@ -146,6 +149,25 @@ describe("configured Replit CORS origins", () => {
       ]),
     );
     expect(origins.has("https://another-app.replit.app")).toBe(false);
+  });
+});
+
+describe("configured public base CORS origin", () => {
+  it("allows HTTPS origins and local HTTP origins exactly", () => {
+    expect(getConfiguredPublicBaseOrigin("https://tradepilot.id/path")).toBe(
+      "https://tradepilot.id",
+    );
+    expect(getConfiguredPublicBaseOrigin("http://localhost:5000/path")).toBe(
+      "http://localhost:5000",
+    );
+    expect(getConfiguredPublicBaseOrigin("http://127.0.0.1:5000")).toBe(
+      "http://127.0.0.1:5000",
+    );
+  });
+
+  it("rejects invalid and non-local plain HTTP origins", () => {
+    expect(getConfiguredPublicBaseOrigin("http://example.com")).toBeUndefined();
+    expect(getConfiguredPublicBaseOrigin("not a URL")).toBeUndefined();
   });
 });
 

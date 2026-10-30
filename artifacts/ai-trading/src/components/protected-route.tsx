@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "./auth-provider";
+import { StaffAccessDenied } from "./staff-access-denied";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -8,9 +9,17 @@ interface ProtectedRouteProps {
   requiredRole?: "admin" | "super_admin";
 }
 
+/**
+ * Web TP kini khusus staff: semua halaman yang butuh login hanya untuk role
+ * `admin` dan `super_admin`. User biasa melihat halaman "akses ditolak"
+ * (nasabah memakai TradePilot lewat client area get-sgb / aplikasi mobile).
+ * `requiredRole="super_admin"` tetap membatasi halaman tertentu ke super_admin.
+ */
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const isStaff = user?.role === "admin" || user?.role === "super_admin";
+  const lacksSuperAdmin = requiredRole === "super_admin" && user?.role !== "super_admin";
 
   useEffect(() => {
     if (isLoading) return;
@@ -18,14 +27,11 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       setLocation("/login");
       return;
     }
-    if (requiredRole === "super_admin" && user?.role !== "super_admin") {
-      setLocation("/dashboard");
-      return;
+    // Admin yang membuka halaman super_admin dikembalikan ke halaman staff biasa.
+    if (isStaff && lacksSuperAdmin) {
+      setLocation("/admin");
     }
-    if (requiredRole === "admin" && user?.role !== "admin" && user?.role !== "super_admin") {
-      setLocation("/dashboard");
-    }
-  }, [isLoading, isAuthenticated, user, requiredRole, setLocation]);
+  }, [isLoading, isAuthenticated, isStaff, lacksSuperAdmin, setLocation]);
 
   if (isLoading) {
     return (
@@ -37,9 +43,9 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   if (!isAuthenticated) return null;
 
-  if (requiredRole === "super_admin" && user?.role !== "super_admin") return null;
+  if (!isStaff) return <StaffAccessDenied />;
 
-  if (requiredRole === "admin" && user?.role !== "admin" && user?.role !== "super_admin") return null;
+  if (lacksSuperAdmin) return null;
 
   return <>{children}</>;
 }

@@ -18,6 +18,12 @@ import { dispatchMarketOpenReminders } from "./market-open";
 import { dispatchDormancyNudge } from "./dormancy";
 import { dispatchOnboardingNudges } from "./onboarding-nudge";
 import { runAutoDisengage } from "./auto-disengage";
+import {
+  aggregateTradePilotPerformance,
+  evaluateTradePilotSignals,
+  maintainTradePilotCreditsAndIdempotency,
+} from "./trade-pilot";
+import { recordObservedJob } from "./trade-pilot-observability";
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -417,6 +423,14 @@ export function startBackgroundJobs(): void {
   const dailyInterval = ONE_DAY_MS;
   const expiryCheckInterval = 60 * 60 * 1000;
   const retentionInterval = ONE_DAY_MS;
+
+  // Trade Pilot BFF integration: live signals are evaluated once per minute,
+  // performance snapshots every 15 minutes, and expired credit/idempotency
+  // records are maintained hourly. Each mutation is idempotent, so duplicate
+  // ticks after a process restart are safe.
+  schedule(() => recordObservedJob("signal_evaluation", evaluateTradePilotSignals), 60 * 1000, 8000);
+  schedule(() => recordObservedJob("performance_aggregation", aggregateTradePilotPerformance), 15 * 60 * 1000, 16000);
+  schedule(maintainTradePilotCreditsAndIdempotency, 60 * 60 * 1000, 24000);
 
   schedule(sendFeedbackReminders, feedbackInterval, 5000);
   schedule(sendDailySummary, dailyInterval, 10000);

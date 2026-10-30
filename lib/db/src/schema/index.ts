@@ -1,6 +1,7 @@
 import {
   pgTable,
   serial,
+  bigserial,
   text,
   timestamp,
   boolean,
@@ -11,6 +12,7 @@ import {
   uniqueIndex,
   index,
   foreignKey,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export type TradeSideShape = {
@@ -1301,3 +1303,192 @@ export const aiTokenUsage = pgTable("ai_token_usage", {
 
 export type AiTokenUsage = typeof aiTokenUsage.$inferSelect;
 export type NewAiTokenUsage = typeof aiTokenUsage.$inferInsert;
+
+// Trade Pilot BFF contract. These tables intentionally use the opaque HMAC
+// user id supplied by get-sgb and never reference the consumer application's
+// users table, so this service does not need to persist customer PII.
+// One row per opaque get-sgb user. Holds no PII: only the HMAC user id, the
+// first mode seen, and when the first /bootstrap was served (drives isNewUser).
+export const tradePilotUsers = pgTable("tp_user", {
+  userId: text("user_id").primaryKey(),
+  firstSeenMode: text("first_seen_mode").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  bootstrappedAt: timestamp("bootstrapped_at", { withTimezone: true }),
+});
+
+export const tradePilotCreditBalances = pgTable("tp_credit_balance", {
+  userId: text("user_id").notNull(),
+  mode: text("mode").notNull(),
+  allowance: integer("allowance").notNull(),
+  consumed: integer("consumed").notNull().default(0),
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  resetsAt: timestamp("resets_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.mode] }),
+  resetIdx: index("tp_credit_balance_resets_at_idx").on(t.resetsAt),
+}));
+
+export const tradePilotAnalyses = pgTable("tp_analysis", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  mode: text("mode").notNull(),
+  instrumentId: text("instrument_id").notNull(),
+  instrumentLabel: text("instrument_label").notNull(),
+  timeframe: text("timeframe").notNull(),
+  timeframeLabel: text("timeframe_label").notNull(),
+  direction: text("direction").notNull(),
+  marketSentiment: text("market_sentiment").notNull(),
+  priceAtAnalysis: numeric("price_at_analysis", { precision: 24, scale: 8 }).notNull(),
+  buyLevels: jsonb("buy_levels").$type<{
+    entry: string; stopLoss: string; takeProfitOne: string; takeProfitTwo: string;
+  }>().notNull(),
+  sellLevels: jsonb("sell_levels").$type<{
+    entry: string; stopLoss: string; takeProfitOne: string; takeProfitTwo: string;
+  }>().notNull(),
+  indicators: jsonb("indicators").$type<Array<{
+    key: string; label: string; group: string; value: string; status: string; marker: number;
+  }>>().notNull().default([]),
+  status: text("status").notNull().default("still_valid"),
+  activeSide: text("active_side"),
+  takeProfitOneHitAt: timestamp("take_profit_one_hit_at", { withTimezone: true }),
+  lastEvaluatedPrice: numeric("last_evaluated_price", { precision: 24, scale: 8 }),
+  analyzedAt: timestamp("analyzed_at", { withTimezone: true }).notNull().defaultNow(),
+  validUntil: timestamp("valid_until", { withTimezone: true }).notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  // Data snapshot the analysis was computed from (requirement: dataSnapshot).
+  candleCount: integer("candle_count"),
+  candleAsOf: timestamp("candle_as_of", { withTimezone: true }),
+  // Localized market context ({ id: {title, description, note}, en: {...} }).
+  marketContext: jsonb("market_context").$type<Record<string, { title: string; description: string; note: string }>>(),
+  // Audit trail (retain >= 5 years): model, prompt fingerprint, exact AI
+  // input context and raw AI output, plus token cost for observability.
+  model: text("model"),
+  promptVersion: text("prompt_version"),
+  aiInput: jsonb("ai_input").$type<Record<string, unknown>>(),
+  aiOutput: jsonb("ai_output").$type<Record<string, unknown>>(),
+  aiCacheHit: boolean("ai_cache_hit").notNull().default(false),
+  promptTokens: integer("prompt_tokens").notNull().default(0),
+  completionTokens: integer("completion_tokens").notNull().default(0),
+  totalTokens: integer("total_tokens").notNull().default(0),
+  estimatedCostUsd: numeric("estimated_cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
+  requestId: text("request_id"),
+}, (t) => ({
+  historyIdx: index("tp_analysis_user_mode_analyzed_idx").on(t.userId, t.mode, t.analyzedAt),
+  statusIdx: index("tp_analysis_status_idx").on(t.status),
+}));
+
+export const tradePilotIdempotency = pgTable("tp_idempotency", {
+  userId: text("user_id").notNull(),
+  key: text("key").notNull(),
+  requestHash: text("request_hash").notNull(),
+  analysisId: text("analysis_id").notNull().references(() => tradePilotAnalyses.id, { onDelete: "cascade" }),
+  response: jsonb("response").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.key] }),
+  expiryIdx: index("tp_idempotency_created_at_idx").on(t.createdAt),
+}));
+
+export const tradePilotPriceAlerts = pgTable("tp_price_alert", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  analysisId: text("analysis_id").notNull().references(() => tradePilotAnalyses.id, { onDelete: "cascade" }),
+  mode: text("mode").notNull(),
+  side: text("side").notNull(),
+  levels: jsonb("levels").$type<string[]>().notNull(),
+  channels: jsonb("channels").$type<string[]>().notNull(),
+  active: boolean("active").notNull().default(true),
+  lastTriggeredLevel: text("last_triggered_level"),
+  // level -> ISO timestamp of when that level was hit (per-level status).
+  triggeredLevels: jsonb("triggered_levels").$type<Record<string, string>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  activeIdx: index("tp_price_alert_active_idx").on(t.active),
+  oneSide: uniqueIndex("tp_price_alert_analysis_side_unique").on(t.analysisId, t.side),
+}));
+
+export const tradePilotPerformanceSnapshots = pgTable("tp_performance_snapshot", {
+  mode: text("mode").notNull(),
+  instrumentId: text("instrument_id").notNull().default("*"),
+  timeframe: text("timeframe").notNull(),
+  sample: integer("sample").notNull().default(0),
+  stillValid: integer("still_valid").notNull().default(0),
+  expired: integer("expired").notNull().default(0),
+  stopLoss: integer("stop_loss").notNull().default(0),
+  takeProfitOne: integer("tp1").notNull().default(0),
+  takeProfitTwo: integer("tp2").notNull().default(0),
+  winRate: integer("win_rate"),
+  completion: integer("completion"),
+  minimumSamples: integer("minimum_samples"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.mode, t.instrumentId, t.timeframe] }),
+}));
+
+export const tradePilotTradingPlans = pgTable("tp_trading_plan", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  analysisId: text("analysis_id").notNull().references(() => tradePilotAnalyses.id, { onDelete: "cascade" }),
+  mode: text("mode").notNull(),
+  variant: text("variant").notNull(),
+  accountType: text("account_type").notNull(),
+  tradingCapital: numeric("trading_capital", { precision: 24, scale: 2 }).notNull(),
+  lossLimit: numeric("loss_limit", { precision: 24, scale: 2 }).notNull(),
+  riskStyle: text("risk_style").notNull(),
+  result: jsonb("result").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userAnalysisIdx: index("tp_trading_plan_user_analysis_idx").on(t.userId, t.analysisId, t.createdAt),
+}));
+
+// Audit aksi admin konsol TradePilot. Tidak pernah menyimpan email nasabah:
+// pencarian via email hanya mencatat userId HMAC hasilnya (bila ketemu).
+export const tradePilotAdminAudit = pgTable("tp_admin_audit", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  adminUserId: integer("admin_user_id").notNull(),
+  action: text("action").notNull(),
+  targetUserId: text("target_user_id"),
+  found: boolean("found").notNull().default(false),
+  requestId: text("request_id"),
+  details: jsonb("details").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  createdIdx: index("tp_admin_audit_created_idx").on(t.createdAt),
+  adminIdx: index("tp_admin_audit_admin_idx").on(t.adminUserId, t.createdAt),
+}));
+
+// Pengaturan TradePilot yang diubah super_admin (kuota, kill switch).
+export const tradePilotSettings = pgTable("tp_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<Record<string, unknown>>().notNull(),
+  updatedBy: integer("updated_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Snapshot kesehatan operasional terbaru. Instrumentasi menulis best-effort
+// agar kegagalan observability tidak pernah memutus analisis atau background job.
+export const tradePilotOperationalHealth = pgTable("tp_operational_health", {
+  key: text("key").primaryKey(),
+  lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+  lastFailureAt: timestamp("last_failure_at", { withTimezone: true }),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
+  details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+});
+
+// Event pendek untuk menghitung rasio kegagalan OpenAI/webhook dalam window
+// waktu. Retensi dibatasi oleh maintenance job TradePilot.
+export const tradePilotOperationalEvents = pgTable("tp_operational_event", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  category: text("category").notNull(),
+  success: boolean("success").notNull(),
+  details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  categoryCreatedIdx: index("tp_operational_event_category_created_idx").on(t.category, t.createdAt),
+}));
+
+export type TradePilotAnalysis = typeof tradePilotAnalyses.$inferSelect;
+export type TradePilotPriceAlert = typeof tradePilotPriceAlerts.$inferSelect;
+export type TradePilotTradingPlan = typeof tradePilotTradingPlans.$inferSelect;

@@ -11,6 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import router from "./routes";
+import tradePilotRouter from "./routes/trade-pilot";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -69,6 +70,25 @@ export function getConfiguredReplitOrigins(
   return origins;
 }
 
+export function getConfiguredPublicBaseOrigin(
+  value: string | undefined,
+): string | undefined {
+  if (!value?.trim()) return undefined;
+
+  try {
+    const url = new URL(value.trim());
+    const isLocalHttp =
+      url.protocol === "http:" &&
+      (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+
+    if (url.protocol === "https:" || isLocalHttp) return url.origin;
+  } catch {
+    // Invalid values must not widen the CORS allowlist.
+  }
+
+  return undefined;
+}
+
 // In deployed artifacts REPLIT_DOMAINS contains the published domains.
 // In the workspace shell it contains the development domain, while Expo web
 // previews use their own exact runtime domain. Keep all exact sources to
@@ -81,6 +101,9 @@ const REPLIT_RUNTIME_ORIGINS = getConfiguredReplitOrigins(
     process.env["REPLIT_EXPO_DEV_DOMAIN"],
   ],
 );
+const PUBLIC_BASE_ORIGIN = getConfiguredPublicBaseOrigin(
+  process.env["PUBLIC_BASE_URL"],
+);
 
 app.use(
   cors({
@@ -89,6 +112,7 @@ app.use(
       // nothing for a browser-enforced CORS check to protect here.
       if (!origin) return callback(null, true);
       if (origin === PRODUCTION_ORIGIN) return callback(null, true);
+      if (origin === PUBLIC_BASE_ORIGIN) return callback(null, true);
       if (REPLIT_RUNTIME_ORIGINS.has(origin)) return callback(null, true);
       if (
         process.env["NODE_ENV"] !== "production" &&
@@ -116,6 +140,7 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 
+app.use("/v1/trade-pilot", tradePilotRouter);
 app.use("/api", router);
 
 // In production the api-server also serves the ai-trading SPA so the

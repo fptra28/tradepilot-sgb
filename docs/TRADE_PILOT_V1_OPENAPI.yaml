@@ -1,0 +1,443 @@
+openapi: 3.1.0
+info:
+  title: Trade Pilot API (client-area)
+  version: 1.1.0
+  description: >
+    Server-to-server API consumed by the get-sgb client-area (Next.js server
+    actions / server components). Contract follows "Requirement API —
+    TradePilot" (2026-10-15). Never call from the browser.
+servers:
+  - url: '{TRADE_PILOT_API_BASE_URL}/v1/trade-pilot'
+    variables:
+      TRADE_PILOT_API_BASE_URL: { default: 'http://localhost:5000' }
+security:
+  - BearerAuth: []
+paths:
+  /bootstrap:
+    get:
+      operationId: getTradePilotBootstrap
+      summary: Credits, histories, latest analyses and performance for the requested modes (auto-provisions the user)
+      parameters:
+        - $ref: '#/components/parameters/User'
+        - $ref: '#/components/parameters/AllowedModes'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - { name: modes, in: query, description: 'Comma-separated, e.g. demo,real. Defaults to all allowed modes.', schema: { type: string, example: 'demo,real' } }
+      responses:
+        '200':
+          description: Bootstrap payload
+          content: { application/json: { schema: { $ref: '#/components/schemas/Bootstrap' } } }
+        default: { $ref: '#/components/responses/Error' }
+  /credits:
+    get:
+      operationId: getTradePilotCredits
+      parameters: [{ $ref: '#/components/parameters/User' }, { $ref: '#/components/parameters/AllowedModes' }, { $ref: '#/components/parameters/ModeQuery' }]
+      responses:
+        '200': { description: Credit balance, content: { application/json: { schema: { $ref: '#/components/schemas/CreditBalance' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /analyses:
+    post:
+      operationId: createTradePilotAnalysis
+      summary: Run an AI analysis and charge 1 credit (only on success)
+      parameters:
+        - $ref: '#/components/parameters/User'
+        - $ref: '#/components/parameters/AllowedModes'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, pattern: '^[a-zA-Z0-9-]{8,80}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [instrumentId, mode, timeframe]
+              properties:
+                instrumentId: { $ref: '#/components/schemas/InstrumentId' }
+                mode: { $ref: '#/components/schemas/Mode' }
+                timeframe: { $ref: '#/components/schemas/Timeframe' }
+      responses:
+        '201':
+          description: Analysis created (or idempotent replay within 24h)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [analysis, credit, history]
+                properties:
+                  analysis: { $ref: '#/components/schemas/Analysis' }
+                  credit: { $ref: '#/components/schemas/CreditBalance' }
+                  history: { $ref: '#/components/schemas/HistoryItem' }
+        default: { $ref: '#/components/responses/Error' }
+  /analyses/latest:
+    get:
+      operationId: getLatestTradePilotAnalysis
+      parameters: [{ $ref: '#/components/parameters/User' }, { $ref: '#/components/parameters/AllowedModes' }, { $ref: '#/components/parameters/AcceptLanguage' }, { $ref: '#/components/parameters/ModeQuery' }]
+      responses:
+        '200': { description: Latest analysis, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
+        '204': { description: No analysis yet for this mode }
+        default: { $ref: '#/components/responses/Error' }
+  /analyses/{id}:
+    get:
+      operationId: getTradePilotAnalysis
+      description: Returns 404 (not 403) when the id belongs to another user.
+      parameters: [{ $ref: '#/components/parameters/User' }, { $ref: '#/components/parameters/AcceptLanguage' }, { $ref: '#/components/parameters/AnalysisId' }]
+      responses:
+        '200': { description: Analysis detail, content: { application/json: { schema: { $ref: '#/components/schemas/Analysis' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /analyses/{id}/indicators:
+    get:
+      operationId: getTradePilotAnalysisIndicators
+      parameters: [{ $ref: '#/components/parameters/User' }, { $ref: '#/components/parameters/AnalysisId' }]
+      responses:
+        '200':
+          description: Indicators computed from the same candles as the analysis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysisId: { type: string }
+                  calculatedAt: { type: string, format: date-time }
+                  items: { type: array, items: { $ref: '#/components/schemas/Indicator' } }
+        default: { $ref: '#/components/responses/Error' }
+  /analyses/{id}/price-alert:
+    get:
+      operationId: getTradePilotPriceAlert
+      parameters: [{ $ref: '#/components/parameters/User' }, { $ref: '#/components/parameters/AnalysisId' }]
+      responses:
+        '200': { description: Alert state, content: { application/json: { schema: { $ref: '#/components/schemas/PriceAlert' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    put:
+      operationId: putTradePilotPriceAlert
+      description: Enable/disable alerts. Enabling requires the analysis to be still_valid.
+      parameters: [{ $ref: '#/components/parameters/User' }, { $ref: '#/components/parameters/AnalysisId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+                levels: { type: array, minItems: 1, items: { $ref: '#/components/schemas/Level' }, default: [entry, stopLoss, takeProfitOne, takeProfitTwo] }
+                channels: { type: array, minItems: 1, items: { type: string, enum: [push, email, whatsapp] }, default: [push] }
+      responses:
+        '200': { description: Alert state, content: { application/json: { schema: { $ref: '#/components/schemas/PriceAlert' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /histories:
+    get:
+      operationId: listTradePilotHistories
+      parameters:
+        - $ref: '#/components/parameters/User'
+        - $ref: '#/components/parameters/AllowedModes'
+        - $ref: '#/components/parameters/ModeQuery'
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: instrumentId, in: query, schema: { $ref: '#/components/schemas/InstrumentId' } }
+        - { name: timeframe, in: query, schema: { $ref: '#/components/schemas/Timeframe' } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/HistoryStatus' } }
+      responses:
+        '200':
+          description: Newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/HistoryItem' } }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Error' }
+  /performance/timeframes:
+    get:
+      operationId: getTradePilotTimeframePerformance
+      description: Aggregated globally per mode (all users), refreshed every 15 minutes.
+      parameters:
+        - $ref: '#/components/parameters/User'
+        - $ref: '#/components/parameters/AllowedModes'
+        - $ref: '#/components/parameters/ModeQuery'
+        - { name: instrumentId, in: query, schema: { $ref: '#/components/schemas/InstrumentId' } }
+      responses:
+        '200': { description: One row per timeframe, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/TimeframePerformance' } } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /fundamental-news:
+    get:
+      operationId: getTradePilotFundamentalNews
+      parameters:
+        - $ref: '#/components/parameters/User'
+        - { name: instrumentId, in: query, required: true, schema: { $ref: '#/components/schemas/InstrumentId' } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 5 } }
+      responses:
+        '200':
+          description: Related news (Newsmaker.id = id, Yahoo Finance = en)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instrumentId: { $ref: '#/components/schemas/InstrumentId' }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, title, source, url, publishedAt, language]
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        source: { type: string }
+                        url: { type: [string, 'null'] }
+                        publishedAt: { type: string, format: date-time }
+                        impact: { type: string, enum: [low, medium, high] }
+                        language: { type: string, enum: [id, en] }
+        default: { $ref: '#/components/responses/Error' }
+  /trading-plans:
+    post:
+      operationId: createTradePilotTradingPlan
+      parameters: [{ $ref: '#/components/parameters/User' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [analysisId, variant, accountType, tradingCapital, lossLimit, riskStyle]
+              properties:
+                analysisId: { type: string }
+                variant: { type: string, enum: [buy, sell] }
+                accountType: { type: string, enum: [micro, mini, regular] }
+                tradingCapital: { type: string, example: '1000.00' }
+                lossLimit: { type: string, example: '250.00' }
+                riskStyle: { type: string, maxLength: 32, example: '50' }
+                result: { type: object, description: 'FE-calculated result (lot, margin, risk budget, ...), max 8 KB' }
+      responses:
+        '201': { description: Saved plan, content: { application/json: { schema: { $ref: '#/components/schemas/TradingPlan' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    get:
+      operationId: listTradePilotTradingPlans
+      parameters: [{ $ref: '#/components/parameters/User' }, { name: analysisId, in: query, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Plans for the analysis, content: { application/json: { schema: { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/TradingPlan' } } } } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /instruments:
+    get:
+      operationId: listTradePilotInstruments
+      description: Cacheable for 1 hour.
+      parameters: [{ $ref: '#/components/parameters/User' }]
+      responses:
+        '200': { description: Supported instruments, content: { application/json: { schema: { $ref: '#/components/schemas/InstrumentList' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /candles:
+    get:
+      operationId: getTradePilotCandles
+      description: Supporting endpoint for the levels chart (not in the requirement list).
+      parameters:
+        - $ref: '#/components/parameters/User'
+        - { name: instrumentId, in: query, required: true, schema: { $ref: '#/components/schemas/InstrumentId' } }
+        - { name: timeframe, in: query, required: true, schema: { $ref: '#/components/schemas/Timeframe' } }
+      responses:
+        '200': { description: Up to 300 recent candles }
+        default: { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    BearerAuth: { type: http, scheme: bearer, description: 'TRADE_PILOT_API_KEY' }
+  parameters:
+    User:
+      name: X-TradePilot-User
+      in: header
+      required: true
+      description: Opaque HMAC-SHA256 hex of "trade-pilot:{email}". Email/account numbers are never accepted.
+      schema: { type: string, pattern: '^[a-fA-F0-9]{64}$' }
+    AllowedModes:
+      name: X-Allowed-Modes
+      in: header
+      required: false
+      description: Optional comma-separated modes the client-area validated for this user; other modes get 403.
+      schema: { type: string, example: 'demo,real' }
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      schema: { type: string, enum: [id, en], default: id }
+    ModeQuery: { name: mode, in: query, required: true, schema: { $ref: '#/components/schemas/Mode' } }
+    AnalysisId: { name: id, in: path, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{3,64}$' } }
+  headers:
+    XRequestId: { description: Echoed or generated request id, schema: { type: string } }
+  responses:
+    Error:
+      description: >
+        Error envelope. 400 invalid_request, 401 unauthorized, 403 access_denied,
+        402 insufficient_credit, 404 not_found, 409 idempotency_conflict,
+        429 rate_limited (with Retry-After), 500 internal_error, 503 upstream_unavailable.
+      headers: { X-Request-Id: { $ref: '#/components/headers/XRequestId' } }
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, requestId]
+                properties:
+                  code: { type: string, enum: [invalid_request, unauthorized, access_denied, not_found, idempotency_conflict, insufficient_credit, rate_limited, upstream_unavailable, internal_error] }
+                  message: { type: string }
+                  requestId: { type: string }
+  schemas:
+    Mode: { type: string, enum: [demo, real] }
+    InstrumentId: { type: string, enum: [gold, brent, hang-seng, nikkei] }
+    Timeframe: { type: string, enum: ['1', '5', '15', '30', '60', '240', D, W, M] }
+    Level: { type: string, enum: [entry, stopLoss, takeProfitOne, takeProfitTwo] }
+    HistoryStatus: { type: string, enum: [still_valid, take_profit_1, take_profit_2, stop_loss, expired, invalid] }
+    DataSource: { type: string, enum: [api] }
+    ScenarioLevels:
+      type: object
+      required: [entry, stopLoss, takeProfitOne, takeProfitTwo]
+      properties:
+        entry: { type: string, example: '4172.00' }
+        stopLoss: { type: string }
+        takeProfitOne: { type: string }
+        takeProfitTwo: { type: string }
+    CreditBalance:
+      type: object
+      required: [mode, allowance, consumed, remaining, source]
+      properties:
+        mode: { $ref: '#/components/schemas/Mode' }
+        allowance: { type: integer }
+        consumed: { type: integer }
+        remaining: { type: integer }
+        resetsAt: { type: string, format: date-time }
+        source: { $ref: '#/components/schemas/DataSource' }
+    Indicator:
+      type: object
+      required: [group, label, value, status, marker]
+      properties:
+        group: { type: string, enum: [oscillator, movingAverage] }
+        label: { type: string, example: 'RSI (14)' }
+        value: { type: string, example: '44.87' }
+        status: { type: string, enum: [buy, sell, neutral] }
+        marker: { type: integer, minimum: 0, maximum: 100 }
+    MarketContext:
+      type: object
+      required: [title, description, note]
+      properties: { title: { type: string }, description: { type: string }, note: { type: string } }
+    Analysis:
+      type: object
+      required: [id, analyzedAt, mode, instrumentId, instrumentLabel, timeframe, timeframeLabel, direction, marketSentiment, buyLevels, sellLevels, validUntil, dataSnapshot, indicators, status, disclaimer, source]
+      properties:
+        id: { type: string }
+        analyzedAt: { type: string, format: date-time }
+        mode: { $ref: '#/components/schemas/Mode' }
+        instrumentId: { $ref: '#/components/schemas/InstrumentId' }
+        instrumentLabel: { type: string, example: 'XAU/USD' }
+        timeframe: { $ref: '#/components/schemas/Timeframe' }
+        timeframeLabel: { type: string, example: '1h' }
+        direction: { type: string, enum: [bullish, bearish, neutral] }
+        marketSentiment: { type: string, enum: [bullish, bearish] }
+        buyLevels: { $ref: '#/components/schemas/ScenarioLevels' }
+        sellLevels: { $ref: '#/components/schemas/ScenarioLevels' }
+        validUntil: { type: string, format: date-time }
+        dataSnapshot:
+          type: object
+          required: [price, candleCount, asOf]
+          properties:
+            price: { type: string, example: '4162.35' }
+            candleCount: { type: integer }
+            asOf: { type: string, format: date-time }
+        indicators: { type: array, items: { $ref: '#/components/schemas/Indicator' } }
+        marketContext: { $ref: '#/components/schemas/MarketContext' }
+        status: { $ref: '#/components/schemas/HistoryStatus' }
+        resolvedAt: { type: [string, 'null'], format: date-time }
+        disclaimer: { type: string, description: 'Localized compliance disclaimer (ID/EN)' }
+        source: { $ref: '#/components/schemas/DataSource' }
+    HistoryItem:
+      type: object
+      required: [id, createdAt, mode, instrumentLabel, timeframeLabel, status, source]
+      properties:
+        id: { type: string, description: '= analysis.id' }
+        createdAt: { type: string, format: date-time }
+        mode: { $ref: '#/components/schemas/Mode' }
+        instrumentLabel: { type: string }
+        timeframeLabel: { type: string }
+        status: { $ref: '#/components/schemas/HistoryStatus' }
+        resolvedAt: { type: [string, 'null'], format: date-time }
+        source: { $ref: '#/components/schemas/DataSource' }
+    TimeframePerformance:
+      type: object
+      properties:
+        mode: { $ref: '#/components/schemas/Mode', description: 'Present in /bootstrap only' }
+        timeframe: { type: string, example: '1h' }
+        sample: { type: integer }
+        stillValid: { type: integer }
+        expired: { type: integer }
+        stopLoss: { type: integer }
+        takeProfitOne: { type: integer }
+        takeProfitTwo: { type: integer }
+        winRate: { type: [integer, 'null'], description: '(TP1+TP2)/(TP1+TP2+SL) x 100' }
+        completion: { type: [integer, 'null'] }
+        minimumSamples: { type: [integer, 'null'] }
+    Bootstrap:
+      type: object
+      required: [isNewUser, credits, histories, latestAnalyses, timeframePerformance]
+      properties:
+        isNewUser: { type: boolean, description: 'true only on the first /bootstrap for this user' }
+        credits: { type: object, additionalProperties: { $ref: '#/components/schemas/CreditBalance' } }
+        histories: { type: object, additionalProperties: { type: array, items: { $ref: '#/components/schemas/HistoryItem' } } }
+        latestAnalyses: { type: object, additionalProperties: { oneOf: [{ $ref: '#/components/schemas/Analysis' }, { type: 'null' }] } }
+        timeframePerformance: { type: array, items: { $ref: '#/components/schemas/TimeframePerformance' } }
+    PriceAlert:
+      type: object
+      properties:
+        analysisId: { type: string }
+        enabled: { type: boolean }
+        channels: { type: array, items: { type: string } }
+        levels:
+          type: array
+          items:
+            type: object
+            properties:
+              level: { $ref: '#/components/schemas/Level' }
+              status: { type: string, enum: [pending, triggered, cancelled] }
+              side: { type: [string, 'null'], enum: [buy, sell, null] }
+              triggeredAt: { type: [string, 'null'], format: date-time }
+        updatedAt: { type: [string, 'null'], format: date-time }
+    TradingPlan:
+      type: object
+      properties:
+        id: { type: string }
+        analysisId: { type: string }
+        mode: { $ref: '#/components/schemas/Mode' }
+        variant: { type: string, enum: [buy, sell] }
+        accountType: { type: string, enum: [micro, mini, regular] }
+        tradingCapital: { type: string }
+        lossLimit: { type: string }
+        riskStyle: { type: string }
+        result: { type: [object, 'null'] }
+        createdAt: { type: string, format: date-time }
+    ContractSpec:
+      type: object
+      properties:
+        lot: { type: string, example: '0.10' }
+        contractSize: { type: number }
+        contractUnit: { type: string }
+        margin: { type: [string, 'null'], description: 'Initial margin per 1 lot (USD)' }
+        marginCurrency: { type: string, enum: [USD] }
+        marginSource: { type: string, enum: [broker_document, derived_from_contract_size] }
+    InstrumentList:
+      type: object
+      properties:
+        rulesVersion: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { $ref: '#/components/schemas/InstrumentId' }
+              label: { type: string }
+              quoteSymbols: { type: array, items: { type: string } }
+              tradingViewSymbol: { type: string }
+              timeframes: { type: array, items: { type: object, properties: { value: { $ref: '#/components/schemas/Timeframe' }, label: { type: string } } } }
+              contractSpecs:
+                type: object
+                properties:
+                  micro: { $ref: '#/components/schemas/ContractSpec' }
+                  mini: { $ref: '#/components/schemas/ContractSpec' }
+                  regular: { $ref: '#/components/schemas/ContractSpec' }

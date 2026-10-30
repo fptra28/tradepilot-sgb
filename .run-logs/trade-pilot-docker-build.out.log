@@ -1,0 +1,273 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 513B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.53kB done
+#2 DONE 0.0s
+
+#3 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#3 DONE 3.3s
+
+#4 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#4 resolve docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e 0.0s done
+#4 CACHED
+
+#5 [internal] load metadata for docker.io/library/node:24-bookworm-slim
+#5 DONE 1.2s
+
+#6 [build 1/6] FROM docker.io/library/node:24-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
+#6 resolve docker.io/library/node:24-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 0.0s done
+#6 DONE 0.0s
+
+#7 [build 2/6] WORKDIR /workspace
+#7 CACHED
+
+#8 [build 3/6] RUN corepack enable     && corepack prepare "pnpm@10.18.3" --activate
+#8 CACHED
+
+#9 [internal] load .dockerignore
+#9 transferring context: 476B done
+#9 DONE 0.0s
+
+#10 [internal] load build context
+#10 transferring context: 9.84MB 0.8s done
+#10 DONE 0.8s
+
+#11 [build 4/6] COPY . .
+#11 DONE 0.3s
+
+#12 [build 5/6] RUN pnpm --filter @workspace/api-server...     --filter @workspace/ai-trading...     install --frozen-lockfile
+#12 0.509 Scope: 7 of 11 workspace projects
+#12 0.578 Lockfile is up to date, resolution step is skipped
+#12 0.613 Progress: resolved 1, reused 0, downloaded 0, added 0
+#12 0.690 .                                        | +847 ++++++++++++++++++++++++++++++++
+#12 1.614 Progress: resolved 847, reused 0, downloaded 15, added 15
+#12 2.614 Progress: resolved 847, reused 0, downloaded 51, added 51
+#12 2.832  WARN  Tarball download average speed 31 KiB/s (size 53 KiB) is below 50 KiB/s: https://registry.npmjs.org/fast-xml-builder/-/fast-xml-builder-1.2.0.tgz (GET)
+#12 3.009  WARN  Tarball download average speed 24 KiB/s (size 43 KiB) is below 50 KiB/s: https://registry.npmjs.org/node-fetch/-/node-fetch-2.7.0.tgz (GET)
+#12 3.284  WARN  Tarball download average speed 28 KiB/s (size 63 KiB) is below 50 KiB/s: https://registry.npmjs.org/tr46/-/tr46-0.0.3.tgz (GET)
+#12 3.614 Progress: resolved 847, reused 0, downloaded 98, added 98
+#12 3.688 
+#12 3.688    ╭───────────────────────────────────────────────╮
+#12 3.688    │                                               │
+#12 3.688    │     Update available! 10.18.3 → 12.15.0.      │
+#12 3.688    │     Changelog: https://pnpm.io/v/12.15.0      │
+#12 3.688    │   To update, run: corepack use pnpm@12.15.0   │
+#12 3.688    │                                               │
+#12 3.688    ╰───────────────────────────────────────────────╯
+#12 3.688 
+#12 4.614 Progress: resolved 847, reused 0, downloaded 146, added 146
+#12 5.480  WARN  Tarball download average speed 15 KiB/s (size 15 KiB) is below 50 KiB/s: https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-8.4.0.tgz (GET)
+#12 5.614 Progress: resolved 847, reused 0, downloaded 163, added 163
+#12 6.233  WARN  Tarball download average speed 7 KiB/s (size 7 KiB) is below 50 KiB/s: https://registry.npmjs.org/lazy/-/lazy-1.0.11.tgz (GET)
+#12 6.513  WARN  Tarball download average speed 16 KiB/s (size 30 KiB) is below 50 KiB/s: https://registry.npmjs.org/yauzl/-/yauzl-3.4.0.tgz (GET)
+#12 6.614 Progress: resolved 847, reused 0, downloaded 182, added 182
+#12 7.066  WARN  Tarball download average speed 3 KiB/s (size 9 KiB) is below 50 KiB/s: https://registry.npmjs.org/pg-pool/-/pg-pool-3.13.0.tgz (GET)
+#12 7.190  WARN  Tarball download average speed 8 KiB/s (size 27 KiB) is below 50 KiB/s: https://registry.npmjs.org/object-inspect/-/object-inspect-1.13.4.tgz (GET)
+#12 7.615 Progress: resolved 847, reused 0, downloaded 205, added 205
+#12 7.627  WARN  Tarball download average speed 41 KiB/s (size 125 KiB) is below 50 KiB/s: https://registry.npmjs.org/google-auth-library/-/google-auth-library-10.6.2.tgz (GET)
+#12 7.918  WARN  Tarball download average speed 9 KiB/s (size 13 KiB) is below 50 KiB/s: https://registry.npmjs.org/web-push/-/web-push-3.6.7.tgz (GET)
+#12 8.255  WARN  Tarball download average speed 17 KiB/s (size 21 KiB) is below 50 KiB/s: https://registry.npmjs.org/bn.js/-/bn.js-4.12.3.tgz (GET)
+#12 8.616 Progress: resolved 847, reused 0, downloaded 225, added 225
+#12 9.617 Progress: resolved 847, reused 0, downloaded 247, added 247
+#12 9.660  WARN  Tarball download average speed 1 KiB/s (size 7 KiB) is below 50 KiB/s: https://registry.npmjs.org/fetch-blob/-/fetch-blob-3.2.0.tgz (GET)
+#12 10.62 Progress: resolved 847, reused 0, downloaded 253, added 254
+#12 10.99  WARN  Tarball download average speed 20 KiB/s (size 34 KiB) is below 50 KiB/s: https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz (GET)
+#12 11.62 Progress: resolved 847, reused 0, downloaded 264, added 265
+#12 12.53  WARN  Tarball download average speed 39 KiB/s (size 151 KiB) is below 50 KiB/s: https://registry.npmjs.org/@noble/hashes/-/hashes-1.8.0.tgz (GET)
+#12 12.62 Progress: resolved 847, reused 0, downloaded 268, added 269
+#12 13.19  WARN  Tarball download average speed 32 KiB/s (size 46 KiB) is below 50 KiB/s: https://registry.npmjs.org/get-tsconfig/-/get-tsconfig-4.13.6.tgz (GET)
+#12 13.62 Progress: resolved 847, reused 0, downloaded 284, added 285
+#12 14.62 Progress: resolved 847, reused 0, downloaded 289, added 290
+#12 15.62 Progress: resolved 847, reused 0, downloaded 301, added 302
+#12 16.62 Progress: resolved 847, reused 0, downloaded 315, added 316
+#12 16.73  WARN  Tarball download average speed 38 KiB/s (size 109 KiB) is below 50 KiB/s: https://registry.npmjs.org/yaml/-/yaml-2.8.3.tgz (GET)
+#12 17.45  WARN  Tarball download average speed 37 KiB/s (size 44 KiB) is below 50 KiB/s: https://registry.npmjs.org/tldts-core/-/tldts-core-6.1.86.tgz (GET)
+#12 17.62 Progress: resolved 847, reused 0, downloaded 321, added 322
+#12 17.72  WARN  Tarball download average speed 46 KiB/s (size 68 KiB) is below 50 KiB/s: https://registry.npmjs.org/decimal.js/-/decimal.js-10.6.0.tgz (GET)
+#12 18.62 Progress: resolved 847, reused 0, downloaded 325, added 326
+#12 19.62 Progress: resolved 847, reused 0, downloaded 336, added 337
+#12 19.84  WARN  Tarball download average speed 41 KiB/s (size 92 KiB) is below 50 KiB/s: https://registry.npmjs.org/@hookform/resolvers/-/resolvers-3.10.0.tgz (GET)
+#12 19.97  WARN  Tarball download average speed 21 KiB/s (size 128 KiB) is below 50 KiB/s: https://registry.npmjs.org/acorn/-/acorn-8.16.0.tgz (GET)
+#12 20.62  WARN  Tarball download average speed 39 KiB/s (size 402 KiB) is below 50 KiB/s: https://registry.npmjs.org/jiti/-/jiti-2.6.1.tgz (GET)
+#12 20.62 Progress: resolved 847, reused 0, downloaded 353, added 354
+#12 20.90  WARN  Tarball download average speed 42 KiB/s (size 443 KiB) is below 50 KiB/s: https://registry.npmjs.org/terser/-/terser-5.46.2.tgz (GET)
+#12 21.62 Progress: resolved 847, reused 0, downloaded 381, added 382
+#12 22.62 Progress: resolved 847, reused 0, downloaded 398, added 399
+#12 23.41  WARN  Tarball download average speed 4 KiB/s (size 54 KiB) is below 50 KiB/s: https://registry.npmjs.org/@vitest/mocker/-/mocker-4.1.5.tgz (GET)
+#12 23.62 Progress: resolved 847, reused 0, downloaded 409, added 410
+#12 24.62 Progress: resolved 847, reused 0, downloaded 420, added 421
+#12 25.62 Progress: resolved 847, reused 0, downloaded 428, added 429
+#12 26.62 Progress: resolved 847, reused 0, downloaded 435, added 436
+#12 27.62 Progress: resolved 847, reused 0, downloaded 442, added 443
+#12 27.83  WARN  Tarball download average speed 35 KiB/s (size 47 KiB) is below 50 KiB/s: https://registry.npmjs.org/modern-screenshot/-/modern-screenshot-4.6.8.tgz (GET)
+#12 27.94  WARN  Tarball download average speed 5 KiB/s (size 17 KiB) is below 50 KiB/s: https://registry.npmjs.org/@babel/template/-/template-7.28.6.tgz (GET)
+#12 27.99  WARN  Tarball download average speed 26 KiB/s (size 74 KiB) is below 50 KiB/s: https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.90.21.tgz (GET)
+#12 28.09  WARN  Tarball download average speed 49 KiB/s (size 868 KiB) is below 50 KiB/s: https://registry.npmjs.org/@rollup/rollup-linux-x64-gnu/-/rollup-linux-x64-gnu-4.59.0.tgz (GET)
+#12 28.62 Progress: resolved 847, reused 0, downloaded 455, added 456
+#12 28.73  WARN  Tarball download average speed 21 KiB/s (size 26 KiB) is below 50 KiB/s: https://registry.npmjs.org/@adobe/css-tools/-/css-tools-4.4.4.tgz (GET)
+#12 29.62 Progress: resolved 847, reused 0, downloaded 469, added 470
+#12 30.19  WARN  Tarball download average speed 48 KiB/s (size 294 KiB) is below 50 KiB/s: https://registry.npmjs.org/@babel/types/-/types-7.29.7.tgz (GET)
+#12 30.19  WARN  Tarball download average speed 48 KiB/s (size 294 KiB) is below 50 KiB/s: https://registry.npmjs.org/@babel/types/-/types-7.29.0.tgz (GET)
+#12 30.62 Progress: resolved 847, reused 0, downloaded 483, added 484
+#12 31.62 Progress: resolved 847, reused 0, downloaded 494, added 495
+#12 32.62 Progress: resolved 847, reused 0, downloaded 501, added 502
+#12 33.18  WARN  Tarball download average speed 46 KiB/s (size 188 KiB) is below 50 KiB/s: https://registry.npmjs.org/@babel/core/-/core-7.29.6.tgz (GET)
+#12 33.49  WARN  Tarball download average speed 16 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/@testing-library/user-event/-/user-event-14.6.1.tgz (GET)
+#12 33.62 Progress: resolved 847, reused 0, downloaded 505, added 506
+#12 34.39  WARN  Tarball download average speed 42 KiB/s (size 113 KiB) is below 50 KiB/s: https://registry.npmjs.org/embla-carousel/-/embla-carousel-8.6.0.tgz (GET)
+#12 34.62 Progress: resolved 847, reused 0, downloaded 515, added 516
+#12 35.62 Progress: resolved 847, reused 0, downloaded 526, added 527
+#12 36.62 Progress: resolved 847, reused 0, downloaded 536, added 537
+#12 37.62 Progress: resolved 847, reused 0, downloaded 544, added 545
+#12 38.09  WARN  Tarball download average speed 15 KiB/s (size 47 KiB) is below 50 KiB/s: https://registry.npmjs.org/react-transition-group/-/react-transition-group-4.4.5.tgz (GET)
+#12 38.62 Progress: resolved 847, reused 0, downloaded 557, added 558
+#12 39.24  WARN  Tarball download average speed 25 KiB/s (size 159 KiB) is below 50 KiB/s: https://registry.npmjs.org/react-day-picker/-/react-day-picker-9.14.0.tgz (GET)
+#12 39.62 Progress: resolved 847, reused 0, downloaded 570, added 571
+#12 40.16  WARN  Tarball download average speed 30 KiB/s (size 218 KiB) is below 50 KiB/s: https://registry.npmjs.org/react-resizable-panels/-/react-resizable-panels-2.1.9.tgz (GET)
+#12 40.62 Progress: resolved 847, reused 0, downloaded 587, added 588
+#12 41.62 Progress: resolved 847, reused 0, downloaded 606, added 607
+#12 42.33  WARN  Tarball download average speed 0 KiB/s (size 24 KiB) is below 50 KiB/s: https://registry.npmjs.org/pg/-/pg-8.20.0.tgz (GET)
+#12 42.62 Progress: resolved 847, reused 0, downloaded 634, added 635
+#12 43.62 Progress: resolved 847, reused 0, downloaded 654, added 655
+#12 44.62 Progress: resolved 847, reused 0, downloaded 669, added 670
+#12 45.62 Progress: resolved 847, reused 0, downloaded 688, added 689
+#12 46.62 Progress: resolved 847, reused 0, downloaded 707, added 708
+#12 47.62 Progress: resolved 847, reused 0, downloaded 726, added 727
+#12 48.62 Progress: resolved 847, reused 0, downloaded 742, added 743
+#12 49.31  WARN  Tarball download average speed 4 KiB/s (size 6 KiB) is below 50 KiB/s: https://registry.npmjs.org/fast-json-stable-stringify/-/fast-json-stable-stringify-2.1.0.tgz (GET)
+#12 49.62 Progress: resolved 847, reused 0, downloaded 748, added 749
+#12 49.98  WARN  Tarball download average speed 35 KiB/s (size 1542 KiB) is below 50 KiB/s: https://registry.npmjs.org/web-streams-polyfill/-/web-streams-polyfill-3.3.3.tgz (GET)
+#12 50.62 Progress: resolved 847, reused 0, downloaded 756, added 757
+#12 51.17  WARN  Tarball download average speed 26 KiB/s (size 47 KiB) is below 50 KiB/s: https://registry.npmjs.org/common-tags/-/common-tags-1.8.2.tgz (GET)
+#12 51.62 Progress: resolved 847, reused 0, downloaded 770, added 771
+#12 52.62 Progress: resolved 847, reused 0, downloaded 785, added 786
+#12 53.40  WARN  Tarball download average speed 36 KiB/s (size 81 KiB) is below 50 KiB/s: https://registry.npmjs.org/minipass/-/minipass-7.1.3.tgz (GET)
+#12 53.62 Progress: resolved 847, reused 0, downloaded 793, added 794
+#12 53.78  WARN  Tarball download average speed 38 KiB/s (size 152 KiB) is below 50 KiB/s: https://registry.npmjs.org/jackspeak/-/jackspeak-4.2.3.tgz (GET)
+#12 54.11  WARN  Tarball download average speed 2 KiB/s (size 10 KiB) is below 50 KiB/s: https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz (GET)
+#12 54.11  WARN  Tarball download average speed 35 KiB/s (size 99 KiB) is below 50 KiB/s: https://registry.npmjs.org/path-scurry/-/path-scurry-2.0.2.tgz (GET)
+#12 54.63 Progress: resolved 847, reused 0, downloaded 803, added 804
+#12 55.63 Progress: resolved 847, reused 0, downloaded 811, added 812
+#12 56.63 Progress: resolved 847, reused 0, downloaded 820, added 821
+#12 57.62 Progress: resolved 847, reused 0, downloaded 830, added 831
+#12 58.62 Progress: resolved 847, reused 0, downloaded 837, added 838
+#12 59.62 Progress: resolved 847, reused 0, downloaded 838, added 839
+#12 65.44 Progress: resolved 847, reused 0, downloaded 839, added 839
+#12 66.44 Progress: resolved 847, reused 0, downloaded 839, added 840
+#12 70.46 Progress: resolved 847, reused 0, downloaded 840, added 840
+#12 71.46 Progress: resolved 847, reused 0, downloaded 840, added 841
+#12 73.95 Progress: resolved 847, reused 0, downloaded 841, added 841
+#12 74.95 Progress: resolved 847, reused 0, downloaded 841, added 842
+#12 77.77 Progress: resolved 847, reused 0, downloaded 842, added 842
+#12 78.77 Progress: resolved 847, reused 0, downloaded 843, added 844
+#12 79.78 Progress: resolved 847, reused 0, downloaded 844, added 844
+#12 80.78 Progress: resolved 847, reused 0, downloaded 844, added 845
+#12 100.7 Progress: resolved 847, reused 0, downloaded 845, added 845
+#12 101.7 Progress: resolved 847, reused 0, downloaded 845, added 846
+#12 118.8 Progress: resolved 847, reused 0, downloaded 846, added 846
+#12 118.8 Progress: resolved 847, reused 0, downloaded 846, added 847, done
+#12 119.0 .../esbuild@0.28.1/node_modules/esbuild postinstall$ node install.js
+#12 119.1 .../esbuild@0.28.1/node_modules/esbuild postinstall: Done
+#12 119.3 . preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+#12 119.4 . preinstall: Done
+#12 119.5 Done in 1m 59.2s using pnpm v10.18.3
+#12 DONE 119.7s
+
+#13 [build 6/6] RUN pnpm --filter @workspace/ai-trading run build     && pnpm --filter @workspace/api-server run build
+#13 0.639 
+#13 0.639 > @workspace/ai-trading@0.0.0 build /workspace/artifacts/ai-trading
+#13 0.639 > vite build --config vite.config.ts
+#13 0.639 
+#13 0.876 vite v7.3.6 building client environment for production...
+#13 0.937 transforming...
+#13 1.309 src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#13 2.595 src/components/ui/label.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#13 2.596 src/components/ui/select.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#13 2.812 src/components/ui/progress.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#13 2.814 src/components/ui/collapsible.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#13 3.073 src/components/ui/dropdown-menu.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#13 5.401 ✓ 3881 modules transformed.
+#13 5.662 rendering chunks...
+#13 6.060 computing gzip size...
+#13 6.105 dist/public/manifest.webmanifest                            0.46 kB
+#13 6.105 dist/public/index.html                                      2.79 kB │ gzip:   0.94 kB
+#13 6.105 dist/public/assets/index-BKar9bi0.css                     194.01 kB │ gzip:  28.75 kB
+#13 6.105 dist/public/assets/workbox-window.prod.es5-BIl4cyR9.js      5.76 kB │ gzip:   2.37 kB
+#13 6.105 dist/public/assets/index-BvahOiKL.js                    2,233.08 kB │ gzip: 644.35 kB
+#13 6.105 
+#13 6.105 (!) Some chunks are larger than 500 kB after minification. Consider:
+#13 6.105 - Using dynamic import() to code-split the application
+#13 6.105 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+#13 6.105 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+#13 6.106 ✓ built in 5.21s
+#13 6.455 
+#13 6.455 PWA v1.2.0
+#13 6.455 Building src/sw.ts service worker ("es" format)...
+#13 6.460 vite v7.3.6 building client environment for production...
+#13 6.477 transforming...
+#13 6.544 ✓ 79 modules transformed.
+#13 6.560 rendering chunks...
+#13 6.560 computing gzip size...
+#13 6.562 dist/public/sw.mjs  19.03 kB │ gzip: 6.37 kB
+#13 6.562 ✓ built in 102ms
+#13 6.601 
+#13 6.601 PWA v1.2.0
+#13 6.601 mode      injectManifest
+#13 6.601 format:   es
+#13 6.601 precache  20 entries (2692.47 KiB)
+#13 6.601 files generated
+#13 6.601   dist/public/sw.js
+#13 6.923 
+#13 6.923 > @workspace/api-server@0.0.0 build /workspace/artifacts/api-server
+#13 6.923 > node ./build.mjs
+#13 6.923 
+#13 7.116 
+#13 7.116   dist/index.mjs                       3.8mb ⚠️
+#13 7.116   dist/pino-worker.mjs               153.5kb
+#13 7.116   dist/pino-file.mjs                 142.1kb
+#13 7.116   dist/pino-pretty.mjs               114.6kb
+#13 7.116   dist/thread-stream-worker.mjs        7.4kb
+#13 7.116   dist/index.mjs.map                   8.1mb
+#13 7.116   dist/pino-worker.mjs.map           256.9kb
+#13 7.116   dist/pino-file.mjs.map             229.0kb
+#13 7.116   dist/pino-pretty.mjs.map           203.9kb
+#13 7.116   dist/thread-stream-worker.mjs.map   12.0kb
+#13 7.116 
+#13 7.116 ⚡ Done in 150ms
+#13 DONE 7.2s
+
+#14 [runtime 2/7] WORKDIR /app
+#14 CACHED
+
+#15 [runtime 3/7] COPY --from=build --chown=node:node /workspace/node_modules ./node_modules
+#15 DONE 3.5s
+
+#16 [runtime 4/7] COPY --from=build --chown=node:node /workspace/artifacts/api-server/node_modules ./artifacts/api-server/node_modules
+#16 DONE 0.2s
+
+#17 [runtime 5/7] COPY --from=build --chown=node:node /workspace/artifacts/api-server/package.json ./artifacts/api-server/package.json
+#17 DONE 0.0s
+
+#18 [runtime 6/7] COPY --from=build --chown=node:node /workspace/artifacts/api-server/dist ./artifacts/api-server/dist
+#18 DONE 0.1s
+
+#19 [runtime 7/7] COPY --from=build --chown=node:node /workspace/artifacts/ai-trading/dist/public ./artifacts/ai-trading/dist/public
+#19 DONE 0.0s
+
+#20 exporting to image
+#20 exporting layers
+#20 exporting layers 12.7s done
+#20 exporting manifest sha256:dce99ab48a2804276a85baa1f246ee4706b88ebeadd27ab81d3750d8ce0265eb 0.0s done
+#20 exporting config sha256:0d76081f20309729510c89fca2ba0444242b9313b2a6a47f939360adc7f2e748 done
+#20 exporting attestation manifest sha256:60d4cfea19695467076845967d5f683688fef20d7056fec80aa3e2d9da27f50f 0.0s done
+#20 exporting manifest list sha256:4fffc39ab878767766e0e245841fab6f3a336442104b44a2c1f0444e5e290c4a 0.0s done
+#20 naming to docker.io/library/sgb-tp:local
+#20 naming to docker.io/library/sgb-tp:local done
+#20 unpacking to docker.io/library/sgb-tp:local
+#20 unpacking to docker.io/library/sgb-tp:local 6.7s done
+#20 DONE 19.6s
+
+#21 resolving provenance for metadata file
+#21 DONE 0.0s

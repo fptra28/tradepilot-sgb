@@ -1,0 +1,104 @@
+[28/10/2026 13:02:35,13] recreate app 
+=== migrasi 0003 (idempotent) 
+BEGIN
+CREATE TABLE
+NOTICE:  relation "tp_admin_audit" already exists, skipping
+NOTICE:  relation "tp_admin_audit_created_idx" already exists, skipping
+CREATE INDEX
+CREATE INDEX
+NOTICE:  relation "tp_admin_audit_admin_idx" already exists, skipping
+COMMIT
+exit=0 
+=== migrasi 0004 (idempotent) 
+BEGIN
+ALTER TABLE
+COMMIT
+exit=0 
+#1 [internal] load local bake definitions
+#1 reading from stdin 513B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.53kB done
+#2 DONE 0.0s
+
+#3 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#3 DONE 1.3s
+
+#4 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#4 resolve docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e 0.0s done
+#4 CACHED
+
+#5 [internal] load metadata for docker.io/library/node:24-bookworm-slim
+#5 DONE 1.5s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 476B done
+#6 DONE 0.0s
+
+#7 [runtime 1/7] FROM docker.io/library/node:24-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c
+#7 resolve docker.io/library/node:24-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 94.57kB 0.1s done
+#8 DONE 0.1s
+
+#9 [runtime 5/7] COPY --from=build --chown=node:node /workspace/artifacts/api-server/package.json ./artifacts/api-server/package.json
+#9 CACHED
+
+#10 [build 3/6] RUN corepack enable     && corepack prepare "pnpm@10.18.3" --activate
+#10 CACHED
+
+#11 [build 5/6] RUN pnpm --filter @workspace/api-server...     --filter @workspace/ai-trading...     install --frozen-lockfile
+#11 CACHED
+
+#12 [runtime 3/7] COPY --from=build --chown=node:node /workspace/node_modules ./node_modules
+#12 CACHED
+
+#13 [runtime 2/7] WORKDIR /app
+#13 CACHED
+
+#14 [runtime 4/7] COPY --from=build --chown=node:node /workspace/artifacts/api-server/node_modules ./artifacts/api-server/node_modules
+#14 CACHED
+
+#15 [build 2/6] WORKDIR /workspace
+#15 CACHED
+
+#16 [build 6/6] RUN pnpm --filter @workspace/ai-trading run build     && pnpm --filter @workspace/api-server run build
+#16 CACHED
+
+#17 [runtime 6/7] COPY --from=build --chown=node:node /workspace/artifacts/api-server/dist ./artifacts/api-server/dist
+#17 CACHED
+
+#18 [build 4/6] COPY . .
+#18 CACHED
+
+#19 [runtime 7/7] COPY --from=build --chown=node:node /workspace/artifacts/ai-trading/dist/public ./artifacts/ai-trading/dist/public
+#19 CACHED
+
+#20 exporting to image
+#20 exporting layers done
+#20 exporting manifest sha256:6a5a93c68d6ee77aaa02c32733dc6f4631d5294abec4b7cec31d2f3233741a4b done
+#20 exporting config sha256:b9092456605bf75849036ae0545dea10cf74bc2b0dd165e7a2189b3b2446056e done
+#20 exporting attestation manifest sha256:9f11ede5daeba6dc35ad8ac3eb3cadb918de4100a63e0fe2f67368ab16a1cf7a 0.0s done
+#20 exporting manifest list sha256:bedc3d790e3c8c06fe9e02d7f3e8598a1b71b0251f0baf5fbcaaa01449a32751 0.0s done
+#20 naming to docker.io/library/sgb-tp:local done
+#20 unpacking to docker.io/library/sgb-tp:local done
+#20 DONE 0.1s
+
+#21 resolving provenance for metadata file
+#21 DONE 0.0s
+ sgb-tp:local  Built
+ Container sgb-tp-db-1  Running
+ Container sgb-tp-app-1  Recreate
+ Container sgb-tp-app-1  Recreated
+ Container sgb-tp-db-1  Waiting
+ Container sgb-tp-db-1  Healthy
+ Container sgb-tp-app-1  Starting
+ Container sgb-tp-app-1  Started
+exit=0 
+OPENAI_KEY_OK
+NAME           IMAGE          COMMAND                  SERVICE   CREATED          STATUS                    PORTS
+sgb-tp-app-1   sgb-tp:local   "docker-entrypoint.s…"   app       12 seconds ago   Up 10 seconds (healthy)   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+=== selesai 

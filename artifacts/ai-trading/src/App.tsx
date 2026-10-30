@@ -1,45 +1,31 @@
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { QuotaDialog } from "@/components/quota-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/lib/i18n";
 import { AuthProvider, useAuth } from "@/components/auth-provider";
-import { InstallPromptProvider } from "@/hooks/use-install-prompt";
-import { EmbedProvider } from "@/lib/embed-mode";
 import { ProtectedRoute } from "@/components/protected-route";
 import NotFound from "@/pages/not-found";
-import LandingPage from "@/pages/landing";
-import PrivacySecurityPage from "@/pages/privacy-security";
 import LoginPage from "@/pages/login";
-import RegisterPage from "@/pages/register";
 import ForgotPasswordPage from "@/pages/forgot-password";
-import TiktokCompleteSignupPage from "@/pages/tiktok-complete-signup";
-import AnalyzePage from "@/pages/analyze";
-import AnalysisDetailPage from "@/pages/analysis-detail";
-import HistoryPage from "@/pages/history";
-import ProfilePage from "@/pages/profile";
-import NotificationsPage from "@/pages/notifications";
-import DailySummaryPage from "@/pages/daily-summary";
-import MyAlertsPage from "@/pages/my-alerts";
-import AdminPage from "@/pages/admin";
-import AdminUsersPage from "@/pages/admin-users";
-import AdminFeedbackPage from "@/pages/admin-feedback";
 import LegalPage from "@/pages/legal";
-import GuidePage from "@/pages/guide";
-import JournalPage from "@/pages/journal";
-import MirrorPage from "@/pages/mirror";
-import PerformancePage, { PerformanceMethodologyPage } from "@/pages/performance";
-import ProgressionPage from "@/pages/progression";
-import AdminProgressionPage from "@/pages/admin-progression";
-import AdminTopupsPage from "@/pages/admin-topups";
-import AdminDashboardPage from "@/pages/admin-dashboard";
-import TopupPage from "@/pages/topup";
-import { SplashScreen } from "@/components/splash-screen";
-import { ProgressionLevelUpWatcher } from "@/components/progression/level-up-watcher";
+import TpAdminOverviewPage from "@/pages/tp-admin/overview";
+import TpAdminAnalysesPage from "@/pages/tp-admin/analyses";
+import TpAdminAnalysisDetailPage from "@/pages/tp-admin/analysis-detail";
+import TpAdminUsersPage from "@/pages/tp-admin/users";
+import TpAdminUserDetailPage from "@/pages/tp-admin/user-detail";
+import TpAdminCreditsAlertsPage from "@/pages/tp-admin/credits-alerts";
+import TpAdminAuditPage from "@/pages/tp-admin/audit";
+import TpAdminStaffPage from "@/pages/tp-admin/staff";
+import TpAdminQuotaSettingsPage from "@/pages/tp-admin/quota-settings";
+import TpAdminHealthPage from "@/pages/tp-admin/health";
 import { useEffect } from "react";
-import { useTheme } from "@/components/theme-provider";
+
+/*
+ * Web TP = konsol admin TradePilot v1 (khusus admin & super_admin).
+ * Nasabah memakai TradePilot lewat client area get-sgb / aplikasi mobile.
+ */
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,48 +36,37 @@ const queryClient = new QueryClient({
   },
 });
 
+const ADMIN_HOME = "/admin";
+
 function AuthRedirect({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      if (location === "/login" || location === "/register") {
-        setLocation("/analyze");
-      }
+    if (!isLoading && isAuthenticated && location === "/login") {
+      setLocation(ADMIN_HOME);
     }
   }, [isAuthenticated, isLoading, location, setLocation]);
 
   return <>{children}</>;
 }
 
-function ThemeSync() {
-  const { user } = useAuth();
-  const { setTheme } = useTheme();
-
-  useEffect(() => {
-    if (user?.themePreference === "dark" || user?.themePreference === "light") {
-      setTheme(user.themePreference);
-    }
-  }, [user?.themePreference, setTheme]);
-
-  return null;
+function HomeRedirect() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  return <Redirect to={isAuthenticated ? ADMIN_HOME : "/login"} />;
 }
 
 function Router() {
   return (
     <AuthRedirect>
       <Switch>
-        <Route path="/" component={LandingPage} />
+        <Route path="/" component={HomeRedirect} />
         <Route path="/login" component={LoginPage} />
-        <Route path="/register" component={RegisterPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
-        <Route path="/auth/tiktok/complete-signup" component={TiktokCompleteSignupPage} />
         <Route path="/privacy">
           <LegalPage kind="privacy" />
         </Route>
-        {/* Canonical route is /privacy; /privacy-policy is a common alias
-            app-store reviewers and links elsewhere may expect. */}
         <Route path="/privacy-policy">
           <Redirect to="/privacy" />
         </Route>
@@ -104,113 +79,73 @@ function Router() {
         <Route path="/delete-account">
           <LegalPage kind="delete-account" />
         </Route>
-        <Route path="/performance" component={PerformancePage} />
-        <Route path="/performance/methodology" component={PerformanceMethodologyPage} />
+        {/* Rute lama (dashboard nasabah) diarahkan ke konsol admin. */}
         <Route path="/dashboard">
-          <Redirect to="/analyze" />
+          <Redirect to={ADMIN_HOME} />
         </Route>
-        <Route path="/analyze">
+        <Route path="/admin">
           <ProtectedRoute>
-            <AnalyzePage />
+            <TpAdminOverviewPage />
           </ProtectedRoute>
         </Route>
-        <Route path="/analyses/:id">
+        <Route path="/admin/analyses">
+          <ProtectedRoute>
+            <TpAdminAnalysesPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/analyses/:id">
           {(params) => (
             <ProtectedRoute>
-              <AnalysisDetailPage params={params} />
+              <TpAdminAnalysisDetailPage params={params} />
             </ProtectedRoute>
           )}
         </Route>
-        <Route path="/history">
-          <ProtectedRoute>
-            <HistoryPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/analytics">
-          <Redirect to="/history?view=summary" />
-        </Route>
-        <Route path="/profile/privacy-security">
-          <ProtectedRoute>
-            <PrivacySecurityPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/profile">
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/progression">
-          <ProtectedRoute>
-            <ProgressionPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/notifications">
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/daily-summary">
-          <ProtectedRoute>
-            <DailySummaryPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/my-alerts">
-          <ProtectedRoute>
-            <MyAlertsPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/topup">
-          <ProtectedRoute>
-            <TopupPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/guide">
-          <ProtectedRoute>
-            <GuidePage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/mindset">
-          <Redirect to="/guide?category=psychology" />
-        </Route>
-        <Route path="/journal">
-          <ProtectedRoute>
-            <JournalPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/mirror">
-          <ProtectedRoute>
-            <MirrorPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/dashboard">
-          <ProtectedRoute requiredRole="super_admin">
-            <AdminDashboardPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin">
-          <ProtectedRoute requiredRole="admin">
-            <AdminPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/admin/progression">
-          <ProtectedRoute requiredRole="admin">
-            <AdminProgressionPage />
-          </ProtectedRoute>
-        </Route>
         <Route path="/admin/users">
-          <ProtectedRoute requiredRole="super_admin">
-            <AdminUsersPage />
+          <ProtectedRoute>
+            <TpAdminUsersPage />
           </ProtectedRoute>
         </Route>
-        <Route path="/admin/feedback">
-          <ProtectedRoute requiredRole="admin">
-            <AdminFeedbackPage />
+        <Route path="/admin/users/credits">
+          <ProtectedRoute>
+            <TpAdminCreditsAlertsPage />
           </ProtectedRoute>
         </Route>
-        <Route path="/admin/topups">
-          <ProtectedRoute requiredRole="super_admin">
-            <AdminTopupsPage />
+        <Route path="/admin/users/:userId">
+          {(params) => (
+            <ProtectedRoute>
+              <TpAdminUserDetailPage params={params} />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/admin/health">
+          <ProtectedRoute>
+            <TpAdminHealthPage />
           </ProtectedRoute>
+        </Route>
+        <Route path="/admin/settings">
+          <ProtectedRoute requiredRole="super_admin">
+            <TpAdminQuotaSettingsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/settings/staff">
+          <ProtectedRoute requiredRole="super_admin">
+            <TpAdminStaffPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/settings/audit">
+          <ProtectedRoute>
+            <TpAdminAuditPage />
+          </ProtectedRoute>
+        </Route>
+        {/* URL lama sebelum menu digabung. */}
+        <Route path="/admin/credits">
+          <Redirect to="/admin/users/credits" />
+        </Route>
+        <Route path="/admin/audit">
+          <Redirect to="/admin/settings/audit" />
+        </Route>
+        <Route path="/admin/staff">
+          <Redirect to="/admin/settings/staff" />
         </Route>
         <Route component={NotFound} />
       </Switch>
@@ -224,20 +159,12 @@ function App() {
       <ThemeProvider defaultTheme="dark" storageKey="ai-trading-theme">
         <LanguageProvider>
           <TooltipProvider>
-            <InstallPromptProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <EmbedProvider>
-                  <AuthProvider>
-                    <ThemeSync />
-                    <ProgressionLevelUpWatcher />
-                    <Router />
-                  </AuthProvider>
-                </EmbedProvider>
-              </WouterRouter>
-            </InstallPromptProvider>
-            <SplashScreen />
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AuthProvider>
+                <Router />
+              </AuthProvider>
+            </WouterRouter>
             <Toaster />
-            <QuotaDialog />
           </TooltipProvider>
         </LanguageProvider>
       </ThemeProvider>

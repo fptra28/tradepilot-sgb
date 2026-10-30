@@ -13,10 +13,19 @@ if (!process.env.DATABASE_URL) {
 const connectionString = process.env.DATABASE_URL;
 
 const sslMode = (process.env.PGSSLMODE ?? "").toLowerCase();
+const sslDisabled =
+  /[?&]sslmode=disable/i.test(connectionString) || sslMode === "disable";
 const needsSsl =
-  /[?&]sslmode=(require|verify-ca|verify-full)/i.test(connectionString) ||
-  ["require", "verify-ca", "verify-full"].includes(sslMode) ||
-  process.env.NODE_ENV === "production";
+  !sslDisabled &&
+  (/[?&]sslmode=(require|verify-ca|verify-full)/i.test(connectionString) ||
+    ["require", "verify-ca", "verify-full"].includes(sslMode) ||
+    process.env.NODE_ENV === "production");
+
+if (sslDisabled && process.env.NODE_ENV === "production") {
+  console.warn(
+    "[db] PGSSLMODE=disable in production — database transport is NOT encrypted. Only use this on a trusted private container network.",
+  );
+}
 
 // SSL safety: default to strict certificate verification. Only disable it
 // when the operator explicitly opts in via PGSSL_INSECURE=true (e.g. for a
